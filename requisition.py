@@ -145,3 +145,18 @@ print("\nTest 5")
 print("Total:", total5)
 print("Status:", system.requisitions[4]["status"])
 print("Approval Reference:", system.requisitions[4]["approval_reference"])
+
+# Test 6: Manager approves a pending requisition
+print("\nTest 6: Manager Approval")
+system.respond_requisition(10002, "Approved")
+
+# Test 7: Manager rejects a pending requisition
+print("\nTest 7: Manager Rejection")
+system.respond_requisition(10004, "Not approved")
+
+# Test 8: Display Requisition Statistics
+print("\nTest 8: Requisition Statistics")
+print("Total Requisitions:", system.total_requisitions)
+print("Approved Requisitions:", system.approved_requisitions)
+print("Pending Requisitions:", system.pending_requisitions)
+print("Not Approved Requisitions:", system.not_approved_requisitions)
