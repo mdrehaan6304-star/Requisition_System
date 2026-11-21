@@ -1,162 +1,104 @@
 from datetime import date
 
-class RequisitionSystem:
+
+class Requisition:
+
+    next_requisition_id = 10001
 
     def __init__(self):
-        self.requisitions = []
-        self.next_requisition_id = 10001
+        self.date = date.today().strftime("%d/%m/%Y")
+        self.requisition_id = Requisition.next_requisition_id
+        Requisition.next_requisition_id += 1
 
-        self.total_requisitions = 0
-        self.approved_requisitions = 0
-        self.pending_requisitions = 0
-        self.not_approved_requisitions = 0
+        self.staff_id = ""
+        self.staff_name = ""
+        self.requisition_items = []
+        self.total = 0
+        self.status = "Pending"
+        self.approval_reference = "Not available"
 
-    def add_requisition(self, staff_id, staff_name, items):
+    # Add a new requisition
+    def add_requisition(self):
+
+        print("\nEnter Staff Details")
+
+        self.staff_id = input("Enter Staff ID: ")
+        self.staff_name = input("Enter Staff Name: ")
+
+        print("\nEnter Requisition Items")
+
+        number_of_items = int(
+            input("How many items do you want to request? ")
+        )
+
+        for i in range(number_of_items):
+
+            print("\nItem", i + 1)
+
+            item_name = input("Enter item name: ")
+            item_cost = float(input("Enter item cost: $"))
+
+            self.requisition_items.append({
+                "name": item_name,
+                "cost": item_cost
+            })
+
+        self.total = self.requisitions_details()
+
+        self.approve_requisition()
+
+        return self.total
+
+    # Calculate requisition total
+    def requisitions_details(self):
+
         total = 0
-        for item in items:
+
+        for item in self.requisition_items:
             total += item["cost"]
-           
-            requisition_id = self.next_requisition_id
-        self.next_requisition_id += 1
-        # Automatically determine requisition status
-        if total < 500:
-            status = "Approved"
-            approval_reference = staff_id + str(requisition_id)[-3:]
-            self.approved_requisitions += 1
-        else:
-            status = "Pending"
-            approval_reference = "Not available"
-            self.pending_requisitions += 1
-
-        # Store requisition information
-        requisition = {
-            "date": date.today().strftime("%d/%m/%Y"),
-            "staff_id": staff_id,
-            "staff_name": staff_name,
-            "requisition_id": requisition_id,
-            "items": items,
-            "total": total,
-            "status": status,
-            "approval_reference": approval_reference
-        }
-
-        self.requisitions.append(requisition)
-        self.total_requisitions += 1
 
         return total
-    def respond_requisition(self, requisition_id, response):
-    
-        for requisition in self.requisitions:
-                if requisition["requisition_id"] == requisition_id:
-                    if requisition["status"] != "Pending":
-                        print("Already processed.")
-                        return
-    
-                    if response == "Approved":
-                        requisition["status"] = "Approved"
-                        requisition["approval_reference"] = (
-                            requisition["staff_id"] + str(requisition_id)[-3:]
-                        )
-                        self.approved_requisitions += 1
-                        self.pending_requisitions -= 1
-    
-                    elif response == "Not approved":
-                        requisition["status"] = "Not approved"
-                        self.not_approved_requisitions += 1
-                        self.pending_requisitions -= 1
-    
-                    else:
-                        print("Invalid response.")
-                        return
-    
-                    print("Requisition updated.")
-                    return
-    
-        print("Requisition not found.")
-            
-# Create an object of the class
-system = RequisitionSystem()
 
-print("Requisition System Started")
-# Test 1: Requisition below $500
-items1 = [
-    {"cost": 200},
-    {"cost": 150}
-]
+    # Automatically approve or set pending status
+    def approve_requisition(self):
 
-total1 = system.add_requisition("FN19", "John Paul", items1)
+        if self.total < 500:
 
-print("\nTest 1")
-print("Total:", total1)
-print("Status:", system.requisitions[0]["status"])
-print("Approval Reference:", system.requisitions[0]["approval_reference"])
+            self.status = "Approved"
 
+            self.approval_reference = (
+                self.staff_id + str(self.requisition_id)[-3:]
+            )
 
-# Test 2: Requisition above $500
-items2 = [
-    {"cost": 600},
-    {"cost": 400}
-]
+        else:
 
-total2 = system.add_requisition("FN20", "Tracy Brown", items2)
+            self.status = "Pending"
+            self.approval_reference = "Not available"
 
-print("\nTest 2")
-print("Total:", total2)
-print("Status:", system.requisitions[1]["status"])
-print("Approval Reference:", system.requisitions[1]["approval_reference"])
-# Test 3: Requisition below $500
-items3 = [
-    {"cost": 200},
-    {"cost": 250}
-]
+# Create requisition object
+requisition1 = Requisition()
 
-total3 = system.add_requisition("FN15", "Emma Wellington", items3)
+# Collect user input
+requisition1.add_requisition()
 
-# Test 4: Requisition above $500
-items4 = [
-    {"cost": 800},
-    {"cost": 700}
-]
+print("Date:", requisition1.date)
+print("Requisition ID:", requisition1.requisition_id)
+print("Staff ID:", requisition1.staff_id)
+print("Staff Name:", requisition1.staff_name)
 
-total4 = system.add_requisition("FN02", "Catlin White", items4)
+print("\nRequisition Items:")
 
-# Test 5: Requisition below $500
-items5 = [
-    {"cost": 100},
-    {"cost": 150}
-]
+for item in requisition1.requisition_items:
+    print(
+        item["name"],
+        "- $",
+        format(item["cost"], ".2f")
+    )
 
-total5 = system.add_requisition("FN21", "David Smith", items5)
+print("Total: $", format(requisition1.total, ".2f"))
+print("Status:", requisition1.status)
 
-# Display Test 3
-print("\nTest 3")
-print("Total:", total3)
-print("Status:", system.requisitions[2]["status"])
-print("Approval Reference:", system.requisitions[2]["approval_reference"])
-
-# Display Test 4
-print("\nTest 4")
-print("Total:", total4)
-print("Status:", system.requisitions[3]["status"])
-print("Approval Reference:", system.requisitions[3]["approval_reference"])
-
-# Display Test 5
-print("\nTest 5")
-print("Total:", total5)
-print("Status:", system.requisitions[4]["status"])
-print("Approval Reference:", system.requisitions[4]["approval_reference"])
-
-# Test 6: Manager approves a pending requisition
-print("\nTest 6: Manager Approval")
-system.respond_requisition(10002, "Approved")
-
-# Test 7: Manager rejects a pending requisition
-print("\nTest 7: Manager Rejection")
-system.respond_requisition(10004, "Not approved")
-
-# Test 8: Display Requisition Statistics
-print("\nTest 8: Requisition Statistics")
-print("Total Requisitions:", system.total_requisitions)
-print("Approved Requisitions:", system.approved_requisitions)
-print("Pending Requisitions:", system.pending_requisitions)
-print("Not Approved Requisitions:", system.not_approved_requisitions)
+print(
+    "Approval Reference Number:",
+    requisition1.approval_reference
+)
