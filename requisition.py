@@ -7,13 +7,13 @@ class Requisition:
     all_requisitions = []
 
     def __init__(self):
+
         self.date = date.today().strftime("%d/%m/%Y")
         self.requisition_id = Requisition.next_requisition_id
-        Requisition.next_requisition_id += 1
 
         self.staff_id = ""
         self.staff_name = ""
-        self.requisition_items = []
+        self.requisition_items = {}
         self.total = 0
         self.status = "Pending"
         self.approval_reference = "Not available"
@@ -23,26 +23,55 @@ class Requisition:
 
         print("\nEnter Staff Details")
 
-        self.staff_id = input("Enter Staff ID: ")
-        self.staff_name = input("Enter Staff Name: ")
+        self.staff_id = input("Enter Staff ID: ").strip()
+        self.staff_name = input("Enter Staff Name: ").strip()
+
+        while self.staff_id == "" or self.staff_name == "":
+            print("Staff ID and name cannot be empty.")
+            self.staff_id = input("Enter Staff ID: ").strip()
+            self.staff_name = input("Enter Staff Name: ").strip()
 
         print("\nEnter Requisition Items")
 
-        number_of_items = int(
-            input("How many items do you want to request? ")
-        )
+        while True:
+            try:
+                number_of_items = int(
+                    input("How many items do you want to request? ")
+                )
+
+                if number_of_items > 0:
+                    break
+                else:
+                    print("Enter at least one item.")
+
+            except ValueError:
+                print("Please enter a valid number.")
 
         for i in range(number_of_items):
 
             print("\nItem", i + 1)
 
-            item_name = input("Enter item name: ")
-            item_cost = float(input("Enter item cost: $"))
+            item_name = input("Enter item name: ").strip()
 
-            self.requisition_items.append({
-                "name": item_name,
-                "cost": item_cost
-            })
+            while item_name == "" or item_name in self.requisition_items:
+                print("Item name cannot be empty or repeated.")
+                item_name = input("Enter item name: ").strip()
+
+            while True:
+                try:
+                    item_cost = float(
+                        input("Enter item cost: $")
+                    )
+
+                    if item_cost > 0:
+                        break
+                    else:
+                        print("Item cost must be greater than zero.")
+
+                except ValueError:
+                    print("Please enter a valid cost.")
+
+            self.requisition_items[item_name] = item_cost
 
         self.total = self.requisitions_details()
 
@@ -50,17 +79,28 @@ class Requisition:
 
         Requisition.all_requisitions.append(self)
 
-        return self.total
+        Requisition.next_requisition_id += 1
+
+        print("\nRequisition added successfully.")
+
+        return True
 
     # Calculate requisition total
     def requisitions_details(self):
 
         total = 0
 
-        for item in self.requisition_items:
-            total += item["cost"]
+        for cost in self.requisition_items.values():
+            total += cost
 
         return total
+
+    # Generate approval reference
+    def generate_approval_reference(self):
+
+        return (
+            self.staff_id + str(self.requisition_id)[-3:]
+        )
 
     # Automatic approval
     def approve_requisition(self):
@@ -70,7 +110,7 @@ class Requisition:
             self.status = "Approved"
 
             self.approval_reference = (
-                self.staff_id + str(self.requisition_id)[-3:]
+                self.generate_approval_reference()
             )
 
         else:
@@ -83,15 +123,31 @@ class Requisition:
 
         print("\nPending Requisitions")
 
+        pending_exists = False
+
         for req in Requisition.all_requisitions:
 
             if req.status == "Pending":
 
+                pending_exists = True
+
                 print("Requisition ID:", req.requisition_id)
                 print("Staff Name:", req.staff_name)
-                print("Total: $", req.total)
+                print("Total: $", format(req.total, ".2f"))
 
-        requisition_id = int(input("\nEnter Requisition ID: "))
+        if not pending_exists:
+            print("No pending requisitions.")
+            return
+
+        while True:
+            try:
+                requisition_id = int(
+                    input("\nEnter Requisition ID: ")
+                )
+                break
+
+            except ValueError:
+                print("Please enter a valid requisition ID.")
 
         for req in Requisition.all_requisitions:
 
@@ -102,32 +158,34 @@ class Requisition:
                     print("This requisition is not pending.")
                     return
 
-                decision = input(
-                    "Enter manager decision (Approved/Not approved): "
-                ).strip().lower()
+                while True:
 
-                if decision == "approved":
+                    decision = input(
+                        "Enter manager decision (Approved/Not approved): "
+                    ).strip().lower()
 
-                    req.status = "Approved"
+                    if decision == "approved":
 
-                    req.approval_reference = (
-                        req.staff_id + str(req.requisition_id)[-3:]
-                    )
+                        req.status = "Approved"
 
-                    print("Requisition approved.")
+                        req.approval_reference = (
+                            req.generate_approval_reference()
+                        )
 
-                elif decision == "not approved":
+                        print("Requisition approved.")
+                        return
 
-                    req.status = "Not approved"
-                    req.approval_reference = "Not available"
+                    elif decision == "not approved":
 
-                    print("Requisition not approved.")
+                        req.status = "Not approved"
+                        req.approval_reference = "Not available"
 
-                else:
+                        print("Requisition not approved.")
+                        return
 
-                    print("Invalid decision.")
+                    else:
 
-                return
+                        print("Invalid decision. Please try again.")
 
         print("Requisition ID not found.")
 
@@ -141,12 +199,12 @@ class Requisition:
 
         print("\nRequisition Items:")
 
-        for item in self.requisition_items:
+        for item_name, item_cost in self.requisition_items.items():
 
             print(
-                item["name"],
+                item_name,
                 "- $",
-                format(item["cost"], ".2f")
+                format(item_cost, ".2f")
             )
 
         print("Total: $", format(self.total, ".2f"))
@@ -164,50 +222,84 @@ class Requisition:
 
             req.display_requisition()
 
+    # Display requisition statistics
+    def requisition_statistics(self):
 
-number_of_requisitions = int(
-    input("\nHow many requisitions do you want to submit? ")
-)
+        total_requisitions = len(Requisition.all_requisitions)
 
-for i in range(number_of_requisitions):
+        approved = 0
+        pending = 0
+        not_approved = 0
 
-    requisition = Requisition()
-    requisition.add_requisition()
+        for req in Requisition.all_requisitions:
 
+            if req.status == "Approved":
+                approved += 1
 
-# Manager response
+            elif req.status == "Pending":
+                pending += 1
 
-while True:
+            elif req.status == "Not approved":
+                not_approved += 1
 
-    pending_exists = any(
-        req.status == "Pending"
-        for req in Requisition.all_requisitions
-    )
-
-    if not pending_exists:
-        break
-
-    choice = input(
-        "\nDoes the manager want to respond to a pending requisition? (yes/no): "
-    ).strip().lower()
-
-    if choice == "yes":
-
-        manager = Requisition()
-        manager.respond_to_requisition()
-
-    elif choice == "no":
-
-        break
-
-    else:
-
-        print("Please enter yes or no.")
+        print("Total Requisitions:", total_requisitions)
+        print("Approved:", approved)
+        print("Pending:", pending)
+        print("Not approved:", not_approved)
 
 
-# Display all requisitions
+# Main program
+if __name__ == "__main__":
 
-if Requisition.all_requisitions:
+    while True:
+        try:
+            number_of_requisitions = int(
+                input("\nHow many requisitions do you want to submit? ")
+            )
 
-    requisition = Requisition()
-    requisition.display_all_requisitions()
+            if number_of_requisitions > 0:
+                break
+            else:
+                print("Enter at least one requisition.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+
+    for i in range(number_of_requisitions):
+
+        requisition = Requisition()
+        requisition.add_requisition()
+
+    # Manager response
+    while True:
+
+        pending_exists = any(
+            req.status == "Pending"
+            for req in Requisition.all_requisitions
+        )
+
+        if not pending_exists:
+            break
+
+        choice = input(
+            "\nDoes the manager want to respond to a pending requisition? (yes/no): "
+        ).strip().lower()
+
+        if choice == "yes":
+
+            requisition.respond_to_requisition()
+
+        elif choice == "no":
+
+            break
+
+        else:
+
+            print("Please enter yes or no.")
+
+    # Display all requisitions and statistics
+    if Requisition.all_requisitions:
+
+        requisition.display_all_requisitions()
+
+        requisition.requisition_statistics()
